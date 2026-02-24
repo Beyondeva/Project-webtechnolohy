@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useThemeClasses } from '../hooks/useThemeClasses';
 import api, { getImageUrl } from '../api';
 import Navbar from '../components/Navbar';
 import {
@@ -19,14 +21,10 @@ import {
     Save,
 } from 'lucide-react';
 
-const roleConfig = {
-    user: { label: 'ผู้พักอาศัย', icon: User, color: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
-    technician: { label: 'ช่างซ่อม', icon: Wrench, color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-    admin: { label: 'ผู้ดูแลระบบ', icon: Shield, color: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
-};
-
 export default function UsersPage() {
     const { user } = useAuth();
+    const { isDark } = useTheme();
+    const t = useThemeClasses();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -53,6 +51,18 @@ export default function UsersPage() {
     const [editSuccess, setEditSuccess] = useState('');
     const [showEditPassword, setShowEditPassword] = useState(false);
     const editFileRef = useRef(null);
+
+    const roleConfig = isDark
+        ? {
+            user: { label: 'ผู้พักอาศัย', icon: User, color: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+            technician: { label: 'ช่างซ่อม', icon: Wrench, color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+            admin: { label: 'ผู้ดูแลระบบ', icon: Shield, color: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+        }
+        : {
+            user: { label: 'ผู้พักอาศัย', icon: User, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+            technician: { label: 'ช่างซ่อม', icon: Wrench, color: 'bg-amber-100 text-amber-700 border-amber-200' },
+            admin: { label: 'ผู้ดูแลระบบ', icon: Shield, color: 'bg-rose-100 text-rose-700 border-rose-200' },
+        };
 
     useEffect(() => {
         fetchUsers();
@@ -155,7 +165,7 @@ export default function UsersPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+            <div className={`min-h-screen ${t.pageBg}`}>
                 <Navbar />
                 <div className="flex items-center justify-center h-[80vh]">
                     <Loader2 size={40} className="animate-spin text-indigo-400" />
@@ -173,7 +183,7 @@ export default function UsersPage() {
     const editAvatar = editAvatarPreview || (editUser?.avatar ? getImageUrl(editUser.avatar) : null);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+        <div className={`min-h-screen ${t.pageBg}`}>
             <Navbar />
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -183,15 +193,15 @@ export default function UsersPage() {
                             <UsersIcon size={20} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">ผู้ใช้งานในระบบ</h1>
-                            <p className="text-gray-400 text-sm">ทั้งหมด {users.length} คน</p>
+                            <h1 className={`text-2xl font-bold ${t.textPrimary}`}>ผู้ใช้งานในระบบ</h1>
+                            <p className={`${t.textSecondary} text-sm`}>ทั้งหมด {users.length} คน</p>
                         </div>
                     </div>
 
                     <button
                         onClick={() => { setShowForm(!showForm); setFormError(''); setFormSuccess(''); }}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${showForm
-                            ? 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
+                            ? `${t.btnSecondary}`
                             : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/30'
                             }`}
                     >
@@ -202,22 +212,22 @@ export default function UsersPage() {
 
                 {/* Create User Form */}
                 {showForm && (
-                    <div className="mb-8 bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 shadow-2xl">
-                        <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                    <div className={`mb-8 ${t.card} rounded-2xl p-6 shadow-2xl`}>
+                        <h2 className={`text-lg font-semibold ${t.textPrimary} mb-1 flex items-center gap-2`}>
                             <UserPlus size={20} className="text-emerald-400" />
                             สร้างบัญชีผู้ใช้ใหม่
                         </h2>
-                        <p className="text-sm text-gray-400 mb-5">สร้างบัญชีสำหรับผู้พักอาศัยหรือช่างซ่อม</p>
+                        <p className={`text-sm ${t.textSecondary} mb-5`}>สร้างบัญชีสำหรับผู้พักอาศัยหรือช่างซ่อม</p>
 
                         {formError && (
-                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+                            <div className={`mb-4 p-3 ${t.errorBg} rounded-xl flex items-center gap-2 text-sm`}>
                                 <AlertCircle size={16} />
                                 {formError}
                                 <button onClick={() => setFormError('')} className="ml-auto"><X size={14} /></button>
                             </div>
                         )}
                         {formSuccess && (
-                            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+                            <div className={`mb-4 p-3 ${t.successBg} rounded-xl flex items-center gap-2 text-sm`}>
                                 <CheckCircle2 size={16} />
                                 {formSuccess}
                             </div>
@@ -225,51 +235,43 @@ export default function UsersPage() {
 
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">ประเภทผู้ใช้ <span className="text-red-400">*</span></label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ประเภทผู้ใช้ <span className="text-red-400">*</span></label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm({ ...form, role: 'user' })}
+                                    <button type="button" onClick={() => setForm({ ...form, role: 'user' })}
                                         className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${form.role === 'user'
-                                            ? 'bg-blue-500/15 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10'
-                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                                            }`}
-                                    >
-                                        <User size={16} />
-                                        ผู้พักอาศัย
+                                            ? (isDark ? 'bg-blue-500/15 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10' : 'bg-blue-100 border-blue-400 text-blue-700 shadow-sm')
+                                            : `${t.btnSecondary}`
+                                            }`}>
+                                        <User size={16} /> ผู้พักอาศัย
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm({ ...form, role: 'technician' })}
+                                    <button type="button" onClick={() => setForm({ ...form, role: 'technician' })}
                                         className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${form.role === 'technician'
-                                            ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-lg shadow-amber-500/10'
-                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                                            }`}
-                                    >
-                                        <Wrench size={16} />
-                                        ช่างซ่อม
+                                            ? (isDark ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-lg shadow-amber-500/10' : 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm')
+                                            : `${t.btnSecondary}`
+                                            }`}>
+                                        <Wrench size={16} /> ช่างซ่อม
                                     </button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">ชื่อ-นามสกุล <span className="text-red-400">*</span></label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ชื่อ-นามสกุล <span className="text-red-400">*</span></label>
                                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="เช่น สมชาย ใจดี"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all`} />
                             </div>
 
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">ชื่อผู้ใช้ (Username) <span className="text-red-400">*</span></label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ชื่อผู้ใช้ (Username) <span className="text-red-400">*</span></label>
                                 <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="เช่น somchai01"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all`} />
                             </div>
 
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">รหัสผ่าน <span className="text-red-400">*</span></label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>รหัสผ่าน <span className="text-red-400">*</span></label>
                                 <div className="relative">
                                     <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="กำหนดรหัสผ่าน"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                                        className={`w-full ${t.input} rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all`} />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 ${t.textMuted} hover:${t.textLabel} transition-colors`}>
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
@@ -289,7 +291,7 @@ export default function UsersPage() {
                     const RoleIcon = cfg.icon;
                     return (
                         <div key={role} className="mb-6">
-                            <h2 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                            <h2 className={`text-sm font-medium ${t.textSecondary} mb-3 flex items-center gap-2`}>
                                 <RoleIcon size={16} />
                                 {cfg.label} ({members.length})
                             </h2>
@@ -297,18 +299,18 @@ export default function UsersPage() {
                                 {members.map((u) => (
                                     <div
                                         key={u.id}
-                                        className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/8 transition-all flex items-center gap-4"
+                                        className={`${t.card} rounded-xl p-4 ${t.cardHover} transition-all flex items-center gap-4`}
                                     >
                                         {u.avatar ? (
-                                            <img src={getImageUrl(u.avatar)} alt={u.name} className="w-11 h-11 rounded-full object-cover border-2 border-white/10 shrink-0" />
+                                            <img src={getImageUrl(u.avatar)} alt={u.name} className={`w-11 h-11 rounded-full object-cover border-2 ${isDark ? 'border-white/10' : 'border-gray-200'} shrink-0`} />
                                         ) : (
                                             <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
                                                 {u.name?.charAt(0)}
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-white font-medium truncate">{u.name}</p>
-                                            <p className="text-xs text-gray-500">@{u.username}</p>
+                                            <p className={`${t.textPrimary} font-medium truncate`}>{u.name}</p>
+                                            <p className={`text-xs ${t.textMuted}`}>@{u.username}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border ${cfg.color}`}>
@@ -317,7 +319,7 @@ export default function UsersPage() {
                                             {u.role !== 'admin' && (
                                                 <button
                                                     onClick={() => openEditModal(u)}
-                                                    className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                                    className={`p-2 rounded-lg ${t.btnSecondary} transition-all`}
                                                     title="แก้ไขข้อมูล"
                                                 >
                                                     <Pencil size={14} />
@@ -335,15 +337,15 @@ export default function UsersPage() {
             {/* Edit User Modal */}
             {editUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditUser(null)} />
-                    <div className="relative bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                    <div className={t.overlay} onClick={() => setEditUser(null)} />
+                    <div className={`relative ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden`}>
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <div className={`p-6 border-b ${t.border} flex items-center justify-between`}>
+                            <h2 className={`text-lg font-semibold ${t.textPrimary} flex items-center gap-2`}>
                                 <Pencil size={18} className="text-indigo-400" />
                                 แก้ไขข้อมูลผู้ใช้
                             </h2>
-                            <button onClick={() => setEditUser(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                            <button onClick={() => setEditUser(null)} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-white/10 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'} transition-all`}>
                                 <X size={18} />
                             </button>
                         </div>
@@ -351,14 +353,14 @@ export default function UsersPage() {
                         {/* Modal Body */}
                         <form onSubmit={handleEditSubmit} className="p-6 space-y-5">
                             {editError && (
-                                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+                                <div className={`p-3 ${t.errorBg} rounded-xl flex items-center gap-2 text-sm`}>
                                     <AlertCircle size={16} />
                                     {editError}
                                     <button type="button" onClick={() => setEditError('')} className="ml-auto"><X size={14} /></button>
                                 </div>
                             )}
                             {editSuccess && (
-                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+                                <div className={`p-3 ${t.successBg} rounded-xl flex items-center gap-2 text-sm`}>
                                     <CheckCircle2 size={16} />
                                     {editSuccess}
                                 </div>
@@ -368,48 +370,48 @@ export default function UsersPage() {
                             <div className="flex justify-center">
                                 <div className="relative">
                                     {editAvatar ? (
-                                        <img src={editAvatar} alt="avatar" className="w-20 h-20 rounded-full object-cover border-4 border-white/10" />
+                                        <img src={editAvatar} alt="avatar" className={`w-20 h-20 rounded-full object-cover border-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`} />
                                     ) : (
-                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-4 border-white/10">
+                                        <div className={`w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                                             {editUser.name?.charAt(0)}
                                         </div>
                                     )}
                                     <button type="button" onClick={() => editFileRef.current?.click()}
-                                        className="absolute bottom-0 right-0 w-7 h-7 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition-colors border-2 border-slate-900">
+                                        className={`absolute bottom-0 right-0 w-7 h-7 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition-colors border-2 ${isDark ? 'border-slate-900' : 'border-white'}`}>
                                         <Camera size={12} />
                                     </button>
                                     <input ref={editFileRef} type="file" accept="image/*" onChange={handleEditAvatarChange} className="hidden" />
                                 </div>
                             </div>
 
-                            <p className="text-center text-sm text-gray-400">{roleConfig[editUser.role]?.label}</p>
+                            <p className={`text-center text-sm ${t.textSecondary}`}>{roleConfig[editUser.role]?.label}</p>
 
                             {/* Username */}
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">ชื่อผู้ใช้ (สำหรับเข้าสู่ระบบ)</label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ชื่อผู้ใช้ (สำหรับเข้าสู่ระบบ)</label>
                                 <input type="text" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`} />
                             </div>
 
                             {/* Name */}
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">ชื่อ-นามสกุล</label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ชื่อ-นามสกุล</label>
                                 <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`} />
                             </div>
 
                             {/* Password */}
                             <div>
-                                <label className="block text-xs text-gray-500 mb-2">รหัสผ่าน</label>
-                                <div className="mb-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
-                                    <span className="text-sm text-amber-300 font-mono">{editForm.currentPassword}</span>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>รหัสผ่าน</label>
+                                <div className={`mb-2 px-4 py-2.5 ${t.input} rounded-xl flex items-center justify-between`}>
+                                    <span className="text-sm text-amber-500 font-mono">{editForm.currentPassword}</span>
                                 </div>
                                 <div className="relative">
                                     <input type={showEditPassword ? 'text' : 'password'} value={editForm.password}
                                         onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                                         placeholder="เว้นว่างหากไม่ต้องการเปลี่ยน"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
-                                    <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                                        className={`w-full ${t.input} rounded-xl py-3 px-4 pr-12 ${t.inputFocus} transition-all`} />
+                                    <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 ${t.textMuted} hover:${t.textLabel} transition-colors`}>
                                         {showEditPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
@@ -423,7 +425,7 @@ export default function UsersPage() {
                                     บันทึก
                                 </button>
                                 <button type="button" onClick={() => setEditUser(null)}
-                                    className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/10 transition-all">
+                                    className={`px-6 py-3 ${t.btnSecondary} rounded-xl font-medium transition-all`}>
                                     ยกเลิก
                                 </button>
                             </div>

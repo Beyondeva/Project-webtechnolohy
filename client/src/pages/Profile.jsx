@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useThemeClasses } from '../hooks/useThemeClasses';
 import api, { getImageUrl } from '../api';
 import Navbar from '../components/Navbar';
 import {
@@ -20,6 +22,8 @@ import {
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
+    const { isDark } = useTheme();
+    const t = useThemeClasses();
     const navigate = useNavigate();
     const fileRef = useRef(null);
 
@@ -99,100 +103,100 @@ export default function ProfilePage() {
     const currentAvatar = avatarPreview || (user.avatar ? getImageUrl(user.avatar) : null);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+        <div className={`min-h-screen ${t.pageBg}`}>
             <Navbar />
 
             <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
                 <button
                     onClick={() => navigate('/dashboard')}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
+                    className={`flex items-center gap-2 ${t.textSecondary} hover:${t.textPrimary} transition-colors mb-6`}
                 >
                     <ArrowLeft size={18} />
                     กลับหน้าแดชบอร์ด
                 </button>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+                    <div className={`mb-4 p-3 ${t.errorBg} rounded-xl flex items-center gap-2 text-sm`}>
                         <AlertCircle size={16} />
                         {error}
                         <button onClick={() => setError('')} className="ml-auto"><X size={14} /></button>
                     </div>
                 )}
                 {success && (
-                    <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+                    <div className={`mb-4 p-3 ${t.successBg} rounded-xl flex items-center gap-2 text-sm`}>
                         <CheckCircle2 size={16} />
                         {success}
                     </div>
                 )}
 
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                <div className={`${t.card} rounded-2xl overflow-hidden shadow-2xl`}>
                     {/* Header */}
-                    <div className="p-6 sm:p-8 border-b border-white/10 flex flex-col items-center">
+                    <div className={`p-6 sm:p-8 border-b ${t.border} flex flex-col items-center`}>
                         <div className="relative group mb-4">
                             {currentAvatar ? (
                                 <img
                                     src={currentAvatar}
                                     alt="Profile"
-                                    className="w-28 h-28 rounded-full object-cover border-4 border-white/10 shadow-xl"
+                                    className={`w-28 h-28 rounded-full object-cover border-4 ${isDark ? 'border-white/10' : 'border-gray-200'} shadow-xl`}
                                 />
                             ) : (
-                                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold border-4 border-white/10 shadow-xl">
+                                <div className={`w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold border-4 ${isDark ? 'border-white/10' : 'border-gray-200'} shadow-xl`}>
                                     {user.name?.charAt(0)}
                                 </div>
                             )}
                             <button
                                 type="button"
                                 onClick={() => fileRef.current?.click()}
-                                className="absolute bottom-1 right-1 w-9 h-9 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition-colors border-2 border-slate-900"
+                                className={`absolute bottom-1 right-1 w-9 h-9 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg transition-colors border-2 ${isDark ? 'border-slate-900' : 'border-white'}`}
                             >
                                 <Camera size={16} />
                             </button>
                             <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
                         </div>
-                        <h1 className="text-xl font-bold text-white">{user.name}</h1>
-                        <p className="text-sm text-gray-400">@{user.username}</p>
+                        <h1 className={`text-xl font-bold ${t.textPrimary}`}>{user.name}</h1>
+                        <p className={`text-sm ${t.textSecondary}`}>@{user.username}</p>
                     </div>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
-                        {/* Username — not editable for admin */}
+                        {/* Username */}
                         <div>
-                            <label className="block text-xs text-gray-500 mb-2 flex items-center gap-1.5">
+                            <label className={`block text-xs ${t.textMuted} mb-2 flex items-center gap-1.5`}>
                                 <AtSign size={14} />
                                 ชื่อผู้ใช้ (สำหรับเข้าสู่ระบบ)
-                                {isAdmin && <span className="text-gray-600 text-[10px]">(ไม่สามารถแก้ไขได้)</span>}
+                                {isAdmin && <span className={`text-[10px] ${t.textMuted}`}>(ไม่สามารถแก้ไขได้)</span>}
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 disabled={isAdmin}
-                                className={`w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
                         </div>
 
-                        {/* Name — not editable for admin */}
+                        {/* Name */}
                         <div>
-                            <label className="block text-xs text-gray-500 mb-2 flex items-center gap-1.5">
+                            <label className={`block text-xs ${t.textMuted} mb-2 flex items-center gap-1.5`}>
                                 <User size={14} />
                                 ชื่อ-นามสกุล
-                                {isAdmin && <span className="text-gray-600 text-[10px]">(ไม่สามารถแก้ไขได้)</span>}
+                                {isAdmin && <span className={`text-[10px] ${t.textMuted}`}>(ไม่สามารถแก้ไขได้)</span>}
                             </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 disabled={isAdmin}
-                                className={`w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
                         </div>
 
-                        {/* Password — not editable for admin */}
+                        {/* Password */}
                         <div>
-                            <label className="block text-xs text-gray-500 mb-2 flex items-center gap-1.5">
+                            <label className={`block text-xs ${t.textMuted} mb-2 flex items-center gap-1.5`}>
                                 <Lock size={14} />
                                 เปลี่ยนรหัสผ่าน
-                                {isAdmin && <span className="text-gray-600 text-[10px]">(ไม่สามารถแก้ไขได้)</span>}
+                                {isAdmin && <span className={`text-[10px] ${t.textMuted}`}>(ไม่สามารถแก้ไขได้)</span>}
                             </label>
                             <div className="relative">
                                 <input
@@ -201,13 +205,13 @@ export default function ProfilePage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={isAdmin}
                                     placeholder="ป้อนรหัสผ่านใหม่ (เว้นว่างหากไม่ต้องการเปลี่ยน)"
-                                    className={`w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 pr-12 ${t.inputFocus} transition-all ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                                 {!isAdmin && (
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 ${t.textMuted} hover:${t.textLabel} transition-colors`}
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>

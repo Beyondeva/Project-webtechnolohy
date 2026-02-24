@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useThemeClasses } from '../hooks/useThemeClasses';
 import api from '../api';
 import Navbar from '../components/Navbar';
 import StarRating from '../components/StarRating';
@@ -13,29 +14,17 @@ import {
     Wrench,
     BarChart3,
     Ticket,
-    Users,
 } from 'lucide-react';
 
-const statusConfig = {
-    Pending: {
-        label: 'รอดำเนินการ',
-        color: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-        icon: Clock,
-    },
-    'In-Progress': {
-        label: 'กำลังดำเนินการ',
-        color: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-        icon: Loader2,
-    },
-    Resolved: {
-        label: 'เสร็จสิ้น',
-        color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-        icon: CheckCircle2,
-    },
+const statusLabels = {
+    Pending: { label: 'รอดำเนินการ', icon: Clock },
+    'In-Progress': { label: 'กำลังดำเนินการ', icon: Loader2 },
+    Resolved: { label: 'เสร็จสิ้น', icon: CheckCircle2 },
 };
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const t = useThemeClasses();
     const [tickets, setTickets] = useState([]);
     const [techRatings, setTechRatings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -73,7 +62,7 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+            <div className={`min-h-screen ${t.pageBg}`}>
                 <Navbar />
                 <div className="flex items-center justify-center h-[80vh]">
                     <Loader2 size={40} className="animate-spin text-indigo-400" />
@@ -83,15 +72,15 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+        <div className={`min-h-screen ${t.pageBg}`}>
             <Navbar />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">แดชบอร์ด</h1>
-                        <p className="text-gray-400 mt-1">
+                        <h1 className={`text-2xl font-bold ${t.textPrimary}`}>แดชบอร์ด</h1>
+                        <p className={`${t.textSecondary} mt-1`}>
                             {user.role === 'user' && 'ภาพรวมคำร้องแจ้งซ่อมของคุณ'}
                             {user.role === 'technician' && 'งานซ่อมที่ได้รับมอบหมาย'}
                             {user.role === 'admin' && 'ภาพรวมระบบแจ้งซ่อมทั้งหมด'}
@@ -118,7 +107,7 @@ export default function Dashboard() {
                     ].map(({ label, value, icon: Icon, color }) => (
                         <div
                             key={label}
-                            className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/8 transition-all"
+                            className={`${t.card} rounded-xl p-4 ${t.cardHover} transition-all`}
                         >
                             <div className="flex items-center gap-3">
                                 <div
@@ -127,8 +116,8 @@ export default function Dashboard() {
                                     <Icon size={18} className="text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-white">{value}</p>
-                                    <p className="text-xs text-gray-400">{label}</p>
+                                    <p className={`text-2xl font-bold ${t.textPrimary}`}>{value}</p>
+                                    <p className={`text-xs ${t.textSecondary}`}>{label}</p>
                                 </div>
                             </div>
                         </div>
@@ -138,7 +127,7 @@ export default function Dashboard() {
                 {/* Admin: Tech Ratings */}
                 {user.role === 'admin' && techRatings.length > 0 && (
                     <div className="mb-8">
-                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <h2 className={`text-lg font-semibold ${t.textPrimary} mb-4 flex items-center gap-2`}>
                             <BarChart3 size={20} className="text-indigo-400" />
                             คะแนนเฉลี่ยช่างซ่อม
                         </h2>
@@ -146,15 +135,15 @@ export default function Dashboard() {
                             {techRatings.map((tech) => (
                                 <div
                                     key={tech.id}
-                                    className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-5 hover:bg-white/8 transition-all"
+                                    className={`${t.card} rounded-xl p-5 ${t.cardHover} transition-all`}
                                 >
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                                             {tech.name?.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="text-white font-medium">{tech.name}</p>
-                                            <p className="text-xs text-gray-400">
+                                            <p className={`${t.textPrimary} font-medium`}>{tech.name}</p>
+                                            <p className={`text-xs ${t.textSecondary}`}>
                                                 งานทั้งหมด {tech.total_tickets} | รีวิว {tech.total_ratings}
                                             </p>
                                         </div>
@@ -173,49 +162,49 @@ export default function Dashboard() {
 
                 {/* Error */}
                 {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+                    <div className={`mb-4 p-3 ${t.errorBg} rounded-xl flex items-center gap-2 text-sm`}>
                         <AlertCircle size={16} />
                         {error}
                     </div>
                 )}
 
                 {/* Ticket List */}
-                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <h2 className={`text-lg font-semibold ${t.textPrimary} mb-4 flex items-center gap-2`}>
                     <Ticket size={20} className="text-indigo-400" />
                     {user.role === 'user' ? 'คำร้องของฉัน' : user.role === 'technician' ? 'งานซ่อมบำรุง' : 'คำร้องทั้งหมด'}
                 </h2>
 
                 {tickets.length === 0 ? (
-                    <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
-                        <Ticket size={48} className="mx-auto text-gray-600 mb-4" />
-                        <p className="text-gray-400">ยังไม่มีคำร้อง</p>
+                    <div className={`text-center py-16 ${t.card} rounded-2xl`}>
+                        <Ticket size={48} className={`mx-auto ${t.emptyIcon} mb-4`} />
+                        <p className={t.textSecondary}>ยังไม่มีคำร้อง</p>
                     </div>
                 ) : (
                     <div className="grid gap-4">
                         {tickets.map((ticket) => {
-                            const cfg = statusConfig[ticket.status];
-                            const StatusIcon = cfg.icon;
+                            const sl = statusLabels[ticket.status];
+                            const StatusIcon = sl.icon;
                             return (
                                 <Link
                                     key={ticket.id}
                                     to={`/ticket/${ticket.id}`}
-                                    className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-5 hover:bg-white/8 hover:border-white/20 transition-all group"
+                                    className={`${t.card} rounded-xl p-5 ${t.cardHover} transition-all group`}
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                                         {/* Status */}
                                         <span
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border w-fit ${cfg.color}`}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border w-fit ${t.statusConfig[ticket.status]}`}
                                         >
                                             <StatusIcon size={12} />
-                                            {cfg.label}
+                                            {sl.label}
                                         </span>
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-white font-medium group-hover:text-indigo-300 transition-colors truncate">
+                                            <h3 className={`${t.textPrimary} font-medium group-hover:text-indigo-400 transition-colors truncate`}>
                                                 {ticket.title}
                                             </h3>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-400">
+                                            <div className={`flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs ${t.textSecondary}`}>
                                                 <span>ห้อง {ticket.room_number || '–'}</span>
                                                 <span>โดย {ticket.creator_name}</span>
                                                 {ticket.technician_name && (

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useThemeClasses } from '../hooks/useThemeClasses';
 import api, { getImageUrl } from '../api';
 import Navbar from '../components/Navbar';
 import StarRating from '../components/StarRating';
@@ -22,30 +24,17 @@ import {
     XCircle,
 } from 'lucide-react';
 
-const statusConfig = {
-    Pending: {
-        label: 'รอดำเนินการ',
-        color: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-        icon: Clock,
-        dot: 'bg-amber-400',
-    },
-    'In-Progress': {
-        label: 'กำลังดำเนินการ',
-        color: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-        icon: Loader2,
-        dot: 'bg-blue-400',
-    },
-    Resolved: {
-        label: 'เสร็จสิ้น',
-        color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-        icon: CheckCircle2,
-        dot: 'bg-emerald-400',
-    },
+const statusMeta = {
+    Pending: { label: 'รอดำเนินการ', icon: Clock },
+    'In-Progress': { label: 'กำลังดำเนินการ', icon: Loader2 },
+    Resolved: { label: 'เสร็จสิ้น', icon: CheckCircle2 },
 };
 
 export default function TicketDetail() {
     const { id } = useParams();
     const { user } = useAuth();
+    const { isDark } = useTheme();
+    const t = useThemeClasses();
     const navigate = useNavigate();
     const fileRef = useRef(null);
 
@@ -55,19 +44,15 @@ export default function TicketDetail() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Tech: image_after upload
     const [afterFile, setAfterFile] = useState(null);
     const [afterPreview, setAfterPreview] = useState(null);
 
-    // User: rating/review
     const [rating, setRating] = useState(0);
     const [review, setReview] = useState('');
 
-    // Admin: technician assignment
     const [technicians, setTechnicians] = useState([]);
     const [selectedTech, setSelectedTech] = useState('');
 
-    // Tech: cancel repair
     const [showCancelPanel, setShowCancelPanel] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
 
@@ -112,7 +97,6 @@ export default function TicketDetail() {
         }
     };
 
-    // Tech: accept ticket
     const handleAccept = async () => {
         setActionLoading(true);
         setError('');
@@ -130,7 +114,6 @@ export default function TicketDetail() {
         }
     };
 
-    // Tech: cancel repair (unassign and return to Pending)
     const handleCancelRepair = async () => {
         if (!cancelReason.trim()) {
             setError('กรุณาระบุเหตุผลการยกเลิก');
@@ -155,7 +138,6 @@ export default function TicketDetail() {
         }
     };
 
-    // Tech: resolve ticket with image_after
     const handleResolve = async () => {
         if (!afterFile) {
             setError('กรุณาอัปโหลดรูปภาพหลังซ่อมก่อน');
@@ -181,7 +163,6 @@ export default function TicketDetail() {
         }
     };
 
-    // User: submit rating/review
     const handleRate = async () => {
         if (rating === 0) {
             setError('กรุณาให้คะแนน');
@@ -200,7 +181,6 @@ export default function TicketDetail() {
         }
     };
 
-    // Admin: assign technician
     const handleAssignTech = async () => {
         if (!selectedTech) return;
         setActionLoading(true);
@@ -229,7 +209,7 @@ export default function TicketDetail() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+            <div className={`min-h-screen ${t.pageBg}`}>
                 <Navbar />
                 <div className="flex items-center justify-center h-[80vh]">
                     <Loader2 size={40} className="animate-spin text-indigo-400" />
@@ -240,10 +220,10 @@ export default function TicketDetail() {
 
     if (!ticket) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+            <div className={`min-h-screen ${t.pageBg}`}>
                 <Navbar />
                 <div className="max-w-3xl mx-auto px-4 py-8 text-center">
-                    <p className="text-gray-400 text-lg">ไม่พบคำร้องนี้</p>
+                    <p className={`${t.textSecondary} text-lg`}>ไม่พบคำร้องนี้</p>
                     <button onClick={() => navigate('/dashboard')} className="mt-4 text-indigo-400 hover:underline">
                         กลับหน้าแดชบอร์ด
                     </button>
@@ -252,8 +232,8 @@ export default function TicketDetail() {
         );
     }
 
-    const cfg = statusConfig[ticket.status];
-    const StatusIcon = cfg.icon;
+    const sm = statusMeta[ticket.status];
+    const StatusIcon = sm.icon;
 
     const canDelete =
         user.role === 'admin' ||
@@ -265,73 +245,87 @@ export default function TicketDetail() {
         ticket.status === 'Resolved' &&
         !ticket.rating;
 
-    const canAccept =
-        user.role === 'technician' && ticket.status === 'Pending';
+    const canAccept = user.role === 'technician' && ticket.status === 'Pending';
+    const canResolve = user.role === 'technician' && ticket.technician_id === user.id && ticket.status === 'In-Progress';
+    const canCancel = user.role === 'technician' && ticket.technician_id === user.id && ticket.status === 'In-Progress';
+    const canAssign = user.role === 'admin' && ticket.status === 'Pending';
 
-    const canResolve =
-        user.role === 'technician' &&
-        ticket.technician_id === user.id &&
-        ticket.status === 'In-Progress';
+    /* Timeline step helper */
+    const stepClass = (s) => {
+        const isActive = s === ticket.status;
+        const isPast = s === 'Pending' ||
+            (s === 'In-Progress' && ['In-Progress', 'Resolved'].includes(ticket.status)) ||
+            (s === 'Resolved' && ticket.status === 'Resolved');
 
-    const canCancel =
-        user.role === 'technician' &&
-        ticket.technician_id === user.id &&
-        ticket.status === 'In-Progress';
+        if (isActive) return `${t.statusConfig[s]} border-current shadow-lg`;
+        if (isPast) return isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-200 border-gray-300 text-gray-700';
+        return isDark ? 'bg-white/5 border-white/10 text-gray-600' : 'bg-gray-100 border-gray-200 text-gray-400';
+    };
 
-    const canAssign =
-        user.role === 'admin' && ticket.status === 'Pending';
+    const stepLabelClass = (s) => {
+        const isPast = s === 'Pending' ||
+            (s === 'In-Progress' && ['In-Progress', 'Resolved'].includes(ticket.status)) ||
+            (s === 'Resolved' && ticket.status === 'Resolved');
+        return isPast ? (isDark ? 'text-gray-300' : 'text-gray-700') : (isDark ? 'text-gray-600' : 'text-gray-400');
+    };
+
+    const lineClass = (idx) => {
+        const isPast = idx === 0 && ['In-Progress', 'Resolved'].includes(ticket.status);
+        return isPast
+            ? (isDark ? 'bg-gradient-to-r from-white/30 to-white/10' : 'bg-gradient-to-r from-gray-400 to-gray-200')
+            : (isDark ? 'bg-white/10' : 'bg-gray-200');
+    };
+
+    const sectionBorder = `border-b ${t.border}`;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+        <div className={`min-h-screen ${t.pageBg}`}>
             <Navbar />
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-                {/* Back */}
                 <button
                     onClick={() => navigate('/dashboard')}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
+                    className={`flex items-center gap-2 ${t.textSecondary} hover:${t.textPrimary} transition-colors mb-6`}
                 >
                     <ArrowLeft size={18} />
                     กลับหน้าแดชบอร์ด
                 </button>
 
-                {/* Messages */}
                 {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+                    <div className={`mb-4 p-3 ${t.errorBg} rounded-xl flex items-center gap-2 text-sm`}>
                         <AlertCircle size={16} />
                         {error}
                         <button onClick={() => setError('')} className="ml-auto"><X size={14} /></button>
                     </div>
                 )}
                 {success && (
-                    <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+                    <div className={`mb-4 p-3 ${t.successBg} rounded-xl flex items-center gap-2 text-sm`}>
                         <CheckCircle2 size={16} />
                         {success}
                         <button onClick={() => setSuccess('')} className="ml-auto"><X size={14} /></button>
                     </div>
                 )}
 
-                {/* Main Card */}
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                <div className={`${t.card} rounded-2xl overflow-hidden shadow-2xl`}>
                     {/* Header */}
-                    <div className="p-6 sm:p-8 border-b border-white/10">
+                    <div className={`p-6 sm:p-8 ${sectionBorder}`}>
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${cfg.color}`}>
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${t.statusConfig[ticket.status]}`}>
                                         <StatusIcon size={12} />
-                                        {cfg.label}
+                                        {sm.label}
                                     </span>
-                                    <span className="text-xs text-gray-500">#{ticket.id}</span>
+                                    <span className={`text-xs ${t.textMuted}`}>#{ticket.id}</span>
                                 </div>
-                                <h1 className="text-xl sm:text-2xl font-bold text-white">{ticket.title}</h1>
+                                <h1 className={`text-xl sm:text-2xl font-bold ${t.textPrimary}`}>{ticket.title}</h1>
                             </div>
 
                             {canDelete && (
                                 <button
                                     onClick={handleDelete}
                                     disabled={actionLoading}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl hover:bg-red-500/20 transition-all text-sm disabled:opacity-50"
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm disabled:opacity-50"
                                 >
                                     <Trash2 size={16} />
                                     ลบคำร้อง
@@ -339,8 +333,7 @@ export default function TicketDetail() {
                             )}
                         </div>
 
-                        {/* Meta */}
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm text-gray-400">
+                        <div className={`flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm ${t.textSecondary}`}>
                             <span className="flex items-center gap-1.5">
                                 <MapPin size={14} className="text-indigo-400" />
                                 ห้อง {ticket.room_number || '–'}
@@ -364,97 +357,66 @@ export default function TicketDetail() {
 
                     {/* Description */}
                     {ticket.description && (
-                        <div className="p-6 sm:p-8 border-b border-white/10">
-                            <h3 className="text-sm font-medium text-gray-300 mb-3">รายละเอียด</h3>
-                            <p className="text-gray-400 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+                        <div className={`p-6 sm:p-8 ${sectionBorder}`}>
+                            <h3 className={`text-sm font-medium ${t.textLabel} mb-3`}>รายละเอียด</h3>
+                            <p className={`${t.textSecondary} whitespace-pre-wrap leading-relaxed`}>{ticket.description}</p>
                         </div>
                     )}
 
                     {/* Images */}
-                    <div className="p-6 sm:p-8 border-b border-white/10">
-                        <h3 className="text-sm font-medium text-gray-300 mb-4">รูปภาพ</h3>
+                    <div className={`p-6 sm:p-8 ${sectionBorder}`}>
+                        <h3 className={`text-sm font-medium ${t.textLabel} mb-4`}>รูปภาพ</h3>
                         <div className="grid sm:grid-cols-2 gap-4">
-                            {/* Before */}
                             <div>
-                                <p className="text-xs text-gray-500 mb-2 font-medium">ก่อนซ่อม</p>
+                                <p className={`text-xs ${t.textMuted} mb-2 font-medium`}>ก่อนซ่อม</p>
                                 {ticket.image_before ? (
-                                    <div className="rounded-xl overflow-hidden border border-white/10">
-                                        <img
-                                            src={getImageUrl(ticket.image_before)}
-                                            alt="ก่อนซ่อม"
-                                            className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300"
-                                        />
+                                    <div className={`rounded-xl overflow-hidden border ${t.border}`}>
+                                        <img src={getImageUrl(ticket.image_before)} alt="ก่อนซ่อม" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300" />
                                     </div>
                                 ) : (
-                                    <div className="h-56 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-gray-600">
-                                        ไม่มีรูปภาพ
-                                    </div>
+                                    <div className={`h-56 rounded-xl border border-dashed ${t.border} flex items-center justify-center ${t.emptyIcon}`}>ไม่มีรูปภาพ</div>
                                 )}
                             </div>
-
-                            {/* After */}
                             <div>
-                                <p className="text-xs text-gray-500 mb-2 font-medium">หลังซ่อม</p>
+                                <p className={`text-xs ${t.textMuted} mb-2 font-medium`}>หลังซ่อม</p>
                                 {ticket.image_after ? (
-                                    <div className="rounded-xl overflow-hidden border border-white/10">
-                                        <img
-                                            src={getImageUrl(ticket.image_after)}
-                                            alt="หลังซ่อม"
-                                            className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300"
-                                        />
+                                    <div className={`rounded-xl overflow-hidden border ${t.border}`}>
+                                        <img src={getImageUrl(ticket.image_after)} alt="หลังซ่อม" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300" />
                                     </div>
                                 ) : (
-                                    <div className="h-56 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-gray-600">
-                                        ยังไม่มีรูปภาพหลังซ่อม
-                                    </div>
+                                    <div className={`h-56 rounded-xl border border-dashed ${t.border} flex items-center justify-center ${t.emptyIcon}`}>ยังไม่มีรูปภาพหลังซ่อม</div>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     {/* Status Timeline */}
-                    <div className="p-6 sm:p-8 border-b border-white/10">
-                        <h3 className="text-sm font-medium text-gray-300 mb-4">สถานะการดำเนินงาน</h3>
+                    <div className={`p-6 sm:p-8 ${sectionBorder}`}>
+                        <h3 className={`text-sm font-medium ${t.textLabel} mb-4`}>สถานะการดำเนินงาน</h3>
                         <div className="flex items-center gap-0">
                             {['Pending', 'In-Progress', 'Resolved'].map((s, i) => {
-                                const stepCfg = statusConfig[s];
-                                const StepIcon = stepCfg.icon;
-                                const isActive = s === ticket.status;
-                                const isPast =
-                                    (s === 'Pending') ||
-                                    (s === 'In-Progress' && ['In-Progress', 'Resolved'].includes(ticket.status)) ||
-                                    (s === 'Resolved' && ticket.status === 'Resolved');
-
+                                const StepIcon = statusMeta[s].icon;
                                 return (
                                     <div key={s} className="flex items-center flex-1">
                                         <div className="flex flex-col items-center flex-1">
-                                            <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${isActive
-                                                    ? `${stepCfg.color} border-current shadow-lg`
-                                                    : isPast
-                                                        ? 'bg-white/10 border-white/20 text-white'
-                                                        : 'bg-white/5 border-white/10 text-gray-600'
-                                                    }`}
-                                            >
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${stepClass(s)}`}>
                                                 <StepIcon size={16} />
                                             </div>
-                                            <span className={`text-xs mt-2 ${isPast ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                {stepCfg.label}
+                                            <span className={`text-xs mt-2 ${stepLabelClass(s)}`}>
+                                                {statusMeta[s].label}
                                             </span>
                                         </div>
-                                        {i < 2 && (
-                                            <div className={`h-0.5 flex-1 -mt-5 ${isPast && i === 0 && ['In-Progress', 'Resolved'].includes(ticket.status) ? 'bg-gradient-to-r from-white/30 to-white/10' : 'bg-white/10'}`} />
-                                        )}
+                                        {i < 2 && <div className={`h-0.5 flex-1 -mt-5 ${lineClass(i)}`} />}
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* Existing Rating Display */}
+                    {/* Existing Rating */}
                     {ticket.rating && (
-                        <div className="p-6 sm:p-8 border-b border-white/10">
-                            <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                        <div className={`p-6 sm:p-8 ${sectionBorder}`}>
+                            <h3 className={`text-sm font-medium ${t.textLabel} mb-3 flex items-center gap-2`}>
                                 <MessageSquare size={16} className="text-amber-400" />
                                 การรีวิว
                             </h3>
@@ -463,7 +425,7 @@ export default function TicketDetail() {
                                 <span className="text-amber-400 font-semibold">{ticket.rating}/5</span>
                             </div>
                             {ticket.review && (
-                                <p className="text-gray-400 mt-2 italic">"{ticket.review}"</p>
+                                <p className={`${t.textSecondary} mt-2 italic`}>"{ticket.review}"</p>
                             )}
                         </div>
                     )}
@@ -472,107 +434,81 @@ export default function TicketDetail() {
 
                     {/* Tech: Accept */}
                     {canAccept && (
-                        <div className="p-6 sm:p-8 border-b border-white/10 bg-blue-500/5">
-                            <h3 className="text-sm font-medium text-blue-300 mb-3 flex items-center gap-2">
-                                <Wrench size={16} />
-                                ดำเนินการซ่อม
+                        <div className={`p-6 sm:p-8 ${sectionBorder} ${isDark ? 'bg-blue-500/5' : 'bg-blue-50'}`}>
+                            <h3 className={`text-sm font-medium ${isDark ? 'text-blue-300' : 'text-blue-700'} mb-3 flex items-center gap-2`}>
+                                <Wrench size={16} /> ดำเนินการซ่อม
                             </h3>
-                            <p className="text-sm text-gray-400 mb-4">กดปุ่มด้านล่างเพื่อรับงานซ่อมนี้</p>
-                            <button
-                                onClick={handleAccept}
-                                disabled={actionLoading}
-                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 flex items-center gap-2"
-                            >
+                            <p className={`text-sm ${t.textSecondary} mb-4`}>กดปุ่มด้านล่างเพื่อรับงานซ่อมนี้</p>
+                            <button onClick={handleAccept} disabled={actionLoading}
+                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 flex items-center gap-2">
                                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Wrench size={16} />}
                                 รับงานซ่อมนี้
                             </button>
                         </div>
                     )}
 
-                    {/* Tech: Resolve with image_after */}
+                    {/* Tech: Resolve */}
                     {canResolve && (
-                        <div className="p-6 sm:p-8 border-b border-white/10 bg-emerald-500/5">
-                            <h3 className="text-sm font-medium text-emerald-300 mb-3 flex items-center gap-2">
-                                <CheckCircle2 size={16} />
-                                แจ้งซ่อมเสร็จสิ้น
+                        <div className={`p-6 sm:p-8 ${sectionBorder} ${isDark ? 'bg-emerald-500/5' : 'bg-emerald-50'}`}>
+                            <h3 className={`text-sm font-medium ${isDark ? 'text-emerald-300' : 'text-emerald-700'} mb-3 flex items-center gap-2`}>
+                                <CheckCircle2 size={16} /> แจ้งซ่อมเสร็จสิ้น
                             </h3>
-                            <p className="text-sm text-gray-400 mb-4">อัปโหลดรูปภาพหลังซ่อมเพื่อยืนยันการซ่อมเสร็จ</p>
+                            <p className={`text-sm ${t.textSecondary} mb-4`}>อัปโหลดรูปภาพหลังซ่อมเพื่อยืนยันการซ่อมเสร็จ</p>
 
                             {afterPreview ? (
-                                <div className="relative rounded-xl overflow-hidden border border-white/10 mb-4 w-fit">
+                                <div className={`relative rounded-xl overflow-hidden border ${t.border} mb-4 w-fit`}>
                                     <img src={afterPreview} alt="After" className="h-48 object-cover rounded-xl" />
-                                    <button
-                                        onClick={() => { setAfterFile(null); setAfterPreview(null); }}
-                                        className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-white hover:bg-red-500 transition-colors"
-                                    >
+                                    <button onClick={() => { setAfterFile(null); setAfterPreview(null); }}
+                                        className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-white hover:bg-red-500 transition-colors">
                                         <X size={14} />
                                     </button>
                                 </div>
                             ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => fileRef.current?.click()}
-                                    className="mb-4 border-2 border-dashed border-emerald-500/30 rounded-xl py-8 px-12 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
-                                >
-                                    <ImagePlus size={28} className="mx-auto text-gray-600 group-hover:text-emerald-400 mb-2" />
-                                    <p className="text-sm text-gray-400 group-hover:text-emerald-300">อัปโหลดรูปหลังซ่อม</p>
+                                <button type="button" onClick={() => fileRef.current?.click()}
+                                    className={`mb-4 border-2 border-dashed ${isDark ? 'border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/5' : 'border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50'} rounded-xl py-8 px-12 text-center transition-all group`}>
+                                    <ImagePlus size={28} className={`mx-auto ${t.emptyIcon} group-hover:text-emerald-400 mb-2`} />
+                                    <p className={`text-sm ${t.textSecondary} group-hover:text-emerald-500`}>อัปโหลดรูปหลังซ่อม</p>
                                 </button>
                             )}
                             <input ref={fileRef} type="file" accept="image/*" onChange={handleAfterFileChange} className="hidden" />
 
-                            <button
-                                onClick={handleResolve}
-                                disabled={actionLoading || !afterFile}
-                                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
+                            <button onClick={handleResolve} disabled={actionLoading || !afterFile}
+                                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                                 ยืนยันซ่อมเสร็จสิ้น
                             </button>
                         </div>
                     )}
 
-                    {/* Tech: Cancel Repair */}
+                    {/* Tech: Cancel */}
                     {canCancel && (
-                        <div className="p-6 sm:p-8 border-b border-white/10 bg-red-500/5">
-                            <h3 className="text-sm font-medium text-red-300 mb-3 flex items-center gap-2">
-                                <XCircle size={16} />
-                                ยกเลิกการซ่อม
+                        <div className={`p-6 sm:p-8 ${sectionBorder} ${isDark ? 'bg-red-500/5' : 'bg-red-50'}`}>
+                            <h3 className={`text-sm font-medium ${isDark ? 'text-red-300' : 'text-red-700'} mb-3 flex items-center gap-2`}>
+                                <XCircle size={16} /> ยกเลิกการซ่อม
                             </h3>
-                            <p className="text-sm text-gray-400 mb-4">หากไม่สามารถดำเนินการซ่อมได้ สามารถยกเลิกเพื่อให้ช่างท่านอื่นรับงานแทน</p>
+                            <p className={`text-sm ${t.textSecondary} mb-4`}>หากไม่สามารถดำเนินการซ่อมได้ สามารถยกเลิกเพื่อให้ช่างท่านอื่นรับงานแทน</p>
 
                             {!showCancelPanel ? (
-                                <button
-                                    onClick={() => setShowCancelPanel(true)}
-                                    className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/30 flex items-center gap-2"
-                                >
-                                    <XCircle size={16} />
-                                    ยกเลิกการซ่อม
+                                <button onClick={() => setShowCancelPanel(true)}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/30 flex items-center gap-2">
+                                    <XCircle size={16} /> ยกเลิกการซ่อม
                                 </button>
                             ) : (
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-2">เหตุผลการยกเลิก <span className="text-red-400">*</span></label>
-                                        <textarea
-                                            value={cancelReason}
-                                            onChange={(e) => setCancelReason(e.target.value)}
-                                            rows={3}
+                                        <label className={`block text-xs ${t.textMuted} mb-2`}>เหตุผลการยกเลิก <span className="text-red-400">*</span></label>
+                                        <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3}
                                             placeholder="ระบุเหตุผลที่ไม่สามารถดำเนินการซ่อมได้..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all resize-none"
-                                        />
+                                            className={`w-full ${t.input} rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all resize-none`} />
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={handleCancelRepair}
-                                            disabled={actionLoading || !cancelReason.trim()}
-                                            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                        >
+                                        <button onClick={handleCancelRepair} disabled={actionLoading || !cancelReason.trim()}
+                                            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                             {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
                                             ยืนยันการยกเลิก
                                         </button>
-                                        <button
-                                            onClick={() => { setShowCancelPanel(false); setCancelReason(''); }}
-                                            className="px-6 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/10 transition-all"
-                                        >
+                                        <button onClick={() => { setShowCancelPanel(false); setCancelReason(''); }}
+                                            className={`px-6 py-2.5 ${t.btnSecondary} rounded-xl font-medium transition-all`}>
                                             ย้อนกลับ
                                         </button>
                                     </div>
@@ -581,67 +517,50 @@ export default function TicketDetail() {
                         </div>
                     )}
 
-                    {/* User: Rate & Review */}
+                    {/* User: Rate */}
                     {canRate && (
-                        <div className="p-6 sm:p-8 bg-amber-500/5">
-                            <h3 className="text-sm font-medium text-amber-300 mb-3 flex items-center gap-2">
-                                <MessageSquare size={16} />
-                                ให้คะแนนและรีวิว
+                        <div className={`p-6 sm:p-8 ${isDark ? 'bg-amber-500/5' : 'bg-amber-50'}`}>
+                            <h3 className={`text-sm font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'} mb-3 flex items-center gap-2`}>
+                                <MessageSquare size={16} /> ให้คะแนนและรีวิว
                             </h3>
-                            <p className="text-sm text-gray-400 mb-4">กรุณาให้คะแนนและรีวิวการซ่อมเพื่อเป็นประโยชน์ในการปรับปรุง</p>
+                            <p className={`text-sm ${t.textSecondary} mb-4`}>กรุณาให้คะแนนและรีวิวการซ่อมเพื่อเป็นประโยชน์ในการปรับปรุง</p>
 
                             <div className="mb-4">
-                                <label className="block text-xs text-gray-500 mb-2">คะแนน</label>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>คะแนน</label>
                                 <StarRating rating={rating} onRate={setRating} size={28} />
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-xs text-gray-500 mb-2">ความคิดเห็น (ไม่บังคับ)</label>
-                                <textarea
-                                    value={review}
-                                    onChange={(e) => setReview(e.target.value)}
-                                    rows={3}
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ความคิดเห็น (ไม่บังคับ)</label>
+                                <textarea value={review} onChange={(e) => setReview(e.target.value)} rows={3}
                                     placeholder="แสดงความคิดเห็นเกี่ยวกับการซ่อม..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all resize-none"
-                                />
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none`} />
                             </div>
 
-                            <button
-                                onClick={handleRate}
-                                disabled={actionLoading || rating === 0}
-                                className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
+                            <button onClick={handleRate} disabled={actionLoading || rating === 0}
+                                className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 ส่งรีวิว
                             </button>
                         </div>
                     )}
 
-                    {/* Admin: Assign Technician */}
+                    {/* Admin: Assign */}
                     {canAssign && (
-                        <div className="p-6 sm:p-8 bg-indigo-500/5">
-                            <h3 className="text-sm font-medium text-indigo-300 mb-3 flex items-center gap-2">
-                                <Wrench size={16} />
-                                มอบหมายช่างซ่อม
+                        <div className={`p-6 sm:p-8 ${isDark ? 'bg-indigo-500/5' : 'bg-indigo-50'}`}>
+                            <h3 className={`text-sm font-medium ${isDark ? 'text-indigo-300' : 'text-indigo-700'} mb-3 flex items-center gap-2`}>
+                                <Wrench size={16} /> มอบหมายช่างซ่อม
                             </h3>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <select
-                                    value={selectedTech}
-                                    onChange={(e) => setSelectedTech(e.target.value)}
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
-                                >
-                                    <option value="" className="bg-slate-900">-- เลือกช่าง --</option>
-                                    {technicians.map((t) => (
-                                        <option key={t.id} value={t.id} className="bg-slate-900">
-                                            {t.name}
-                                        </option>
+                                <select value={selectedTech} onChange={(e) => setSelectedTech(e.target.value)}
+                                    className={`flex-1 ${t.input} rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none`}>
+                                    <option value="" className={t.optionBg}>-- เลือกช่าง --</option>
+                                    {technicians.map((tech) => (
+                                        <option key={tech.id} value={tech.id} className={t.optionBg}>{tech.name}</option>
                                     ))}
                                 </select>
-                                <button
-                                    onClick={handleAssignTech}
-                                    disabled={actionLoading || !selectedTech}
-                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-                                >
+                                <button onClick={handleAssignTech} disabled={actionLoading || !selectedTech}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap">
                                     {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                     มอบหมาย
                                 </button>

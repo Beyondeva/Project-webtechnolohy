@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useThemeClasses } from '../hooks/useThemeClasses';
 import api from '../api';
 import Navbar from '../components/Navbar';
 import { Upload, X, Loader2, ImagePlus, Send } from 'lucide-react';
 
 export default function CreateTicket() {
     const { user } = useAuth();
+    const t = useThemeClasses();
     const navigate = useNavigate();
     const fileRef = useRef(null);
 
@@ -64,16 +66,16 @@ export default function CreateTicket() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+        <div className={`min-h-screen ${t.pageBg}`}>
             <Navbar />
 
             <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-                <h1 className="text-2xl font-bold text-white mb-2">แจ้งซ่อมใหม่</h1>
-                <p className="text-gray-400 mb-8">กรอกรายละเอียดปัญหาที่ต้องการแจ้งซ่อม</p>
+                <h1 className={`text-2xl font-bold ${t.textPrimary} mb-2`}>แจ้งซ่อมใหม่</h1>
+                <p className={`${t.textSecondary} mb-8`}>กรอกรายละเอียดปัญหาที่ต้องการแจ้งซ่อม</p>
 
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div className={`${t.card} rounded-2xl p-6 sm:p-8 shadow-2xl`}>
                     {error && (
-                        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
+                        <div className={`mb-6 p-3 ${t.errorBg} rounded-xl text-sm`}>
                             {error}
                         </div>
                     )}
@@ -81,7 +83,7 @@ export default function CreateTicket() {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Title */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className={`block text-sm font-medium ${t.textLabel} mb-2`}>
                                 หัวข้อ <span className="text-red-400">*</span>
                             </label>
                             <input
@@ -90,43 +92,43 @@ export default function CreateTicket() {
                                 value={form.title}
                                 onChange={handleChange}
                                 placeholder="เช่น ก๊อกน้ำห้องน้ำรั่ว"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`}
                             />
                         </div>
 
                         {/* Room */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">หมายเลขห้อง</label>
+                            <label className={`block text-sm font-medium ${t.textLabel} mb-2`}>หมายเลขห้อง</label>
                             <input
                                 type="text"
                                 name="room_number"
                                 value={form.room_number}
                                 onChange={handleChange}
                                 placeholder="เช่น 301"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`}
                             />
                         </div>
 
                         {/* Description */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">รายละเอียด</label>
+                            <label className={`block text-sm font-medium ${t.textLabel} mb-2`}>รายละเอียด</label>
                             <textarea
                                 name="description"
                                 value={form.description}
                                 onChange={handleChange}
                                 rows={4}
                                 placeholder="อธิบายรายละเอียดปัญหาเพิ่มเติม..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all resize-none`}
                             />
                         </div>
 
                         {/* Image Upload */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className={`block text-sm font-medium ${t.textLabel} mb-2`}>
                                 ภาพประกอบ (ก่อนซ่อม)
                             </label>
                             {preview ? (
-                                <div className="relative rounded-xl overflow-hidden border border-white/10">
+                                <div className={`relative rounded-xl overflow-hidden border ${t.border}`}>
                                     <img src={preview} alt="Preview" className="w-full h-56 object-cover" />
                                     <button
                                         type="button"
@@ -140,13 +142,13 @@ export default function CreateTicket() {
                                 <button
                                     type="button"
                                     onClick={() => fileRef.current?.click()}
-                                    className="w-full border-2 border-dashed border-white/15 rounded-xl py-12 text-center hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all group"
+                                    className={`w-full border-2 border-dashed ${t.border} rounded-xl py-12 text-center hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all group`}
                                 >
-                                    <ImagePlus size={36} className="mx-auto text-gray-600 group-hover:text-indigo-400 mb-2 transition-colors" />
-                                    <p className="text-sm text-gray-400 group-hover:text-indigo-300 transition-colors">
+                                    <ImagePlus size={36} className={`mx-auto ${t.emptyIcon} group-hover:text-indigo-400 mb-2 transition-colors`} />
+                                    <p className={`text-sm ${t.textSecondary} group-hover:text-indigo-400 transition-colors`}>
                                         คลิกเพื่ออัปโหลดรูปภาพ
                                     </p>
-                                    <p className="text-xs text-gray-600 mt-1">รองรับไฟล์ JPG, PNG, WebP</p>
+                                    <p className={`text-xs ${t.textMuted} mt-1`}>รองรับไฟล์ JPG, PNG, WebP</p>
                                 </button>
                             )}
                             <input

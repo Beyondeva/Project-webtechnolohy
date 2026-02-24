@@ -72,16 +72,78 @@ const pool = mysql.createPool({
 
 ### 4. ติดตั้ง Dependencies
 
-เปิด Terminal (Command Prompt / PowerShell) แล้วรันคำสั่ง:
+เปิด Terminal (Command Prompt / PowerShell) แล้วรันคำสั่งตามลำดับ:
+
+#### 4.1 ติดตั้ง Backend dependencies
 
 ```bash
-# ติดตั้ง Backend dependencies
 cd C:\AppServ\www\PJWEB
 npm install
+```
 
-# ติดตั้ง Frontend dependencies
+**แพ็กเกจที่จะถูกติดตั้ง (4 ตัว):**
+
+| แพ็กเกจ | เวอร์ชัน | หน้าที่ |
+|---------|---------|--------|
+| `express` | ^4.18.2 | Web framework สำหรับสร้าง API |
+| `cors` | ^2.8.5 | อนุญาต Cross-Origin requests (Frontend → Backend) |
+| `multer` | ^1.4.5-lts.1 | จัดการอัปโหลดไฟล์รูปภาพ |
+| `mysql2` | ^3.18.0 | เชื่อมต่อกับฐานข้อมูล MySQL |
+
+> ✅ `npm install` จะอ่าน `package.json` แล้วติดตั้งอัตโนมัติ **ไม่มีคำถาม Yes/No** ใดๆ  
+> รอจนแสดง `added XX packages` แปลว่าเสร็จเรียบร้อย
+
+**ตัวอย่างผลลัพธ์ที่ควรเห็น:**
+```
+added 68 packages, and audited 69 packages in 5s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
+---
+
+#### 4.2 ติดตั้ง Frontend dependencies
+
+```bash
 cd client
 npm install
+```
+
+**แพ็กเกจที่จะถูกติดตั้ง:**
+
+| ประเภท | แพ็กเกจ | เวอร์ชัน | หน้าที่ |
+|--------|---------|---------|--------|
+| dependencies | `react` | ^19.2.0 | ไลบรารีหลักสำหรับ UI |
+| dependencies | `react-dom` | ^19.2.0 | เชื่อม React กับ DOM (เบราว์เซอร์) |
+| dependencies | `react-router-dom` | ^7.13.1 | จัดการเส้นทาง URL (Routing) |
+| dependencies | `axios` | ^1.13.5 | เรียก API จาก Backend |
+| dependencies | `tailwindcss` | ^4.2.1 | CSS Framework สำหรับจัดรูปแบบ |
+| dependencies | `@tailwindcss/vite` | ^4.2.1 | Plugin เชื่อม Tailwind กับ Vite |
+| dependencies | `lucide-react` | ^0.575.0 | ชุดไอคอน (เช่น Wrench, Users, Sun, Moon) |
+| devDependencies | `vite` | ^7.3.1 | Build tool / Dev server |
+| devDependencies | `@vitejs/plugin-react` | ^5.1.1 | Plugin ให้ Vite รองรับ React |
+| devDependencies | `eslint` | ^9.39.1 | ตรวจสอบคุณภาพโค้ด |
+| devDependencies | `eslint-plugin-react-hooks` | ^7.0.1 | ตรวจสอบการใช้ React Hooks |
+| devDependencies | `eslint-plugin-react-refresh` | ^0.4.24 | ตรวจสอบ React Refresh |
+| devDependencies | `globals` | ^16.5.0 | กำหนดตัวแปร global สำหรับ ESLint |
+| devDependencies | `@eslint/js` | ^9.39.1 | ESLint config สำหรับ JavaScript |
+| devDependencies | `@types/react` | ^19.2.7 | TypeScript types (สำหรับ IDE) |
+| devDependencies | `@types/react-dom` | ^19.2.3 | TypeScript types (สำหรับ IDE) |
+
+> ✅ เช่นเดียวกันกับ Backend — **ไม่มีคำถาม Yes/No** ใดๆ  
+> รอจนแสดง `added XX packages` แปลว่าเสร็จเรียบร้อย
+
+**ตัวอย่างผลลัพธ์ที่ควรเห็น:**
+```
+added 288 packages, and audited 289 packages in 15s
+
+102 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
 ```
 
 ---
@@ -140,9 +202,13 @@ PJWEB/
     │   ├── App.jsx            ← Routes
     │   ├── index.css          ← Tailwind styles
     │   ├── context/
-    │   │   └── AuthContext.jsx ← จัดการ Login state
+    │   │   ├── AuthContext.jsx ← จัดการ Login state
+    │   │   └── ThemeContext.jsx← จัดการธีม (มืด/สว่าง)
+    │   ├── hooks/
+    │   │   └── useThemeClasses.js ← Hook สำหรับ class ธีม
     │   ├── components/
-    │   │   ├── Navbar.jsx
+    │   │   ├── Navbar.jsx     ← แถบนำทาง + ปุ่มเปลี่ยนธีม
+    │   │   ├── StarRating.jsx ← ดาวให้คะแนน
     │   │   └── ProtectedRoute.jsx
     │   └── pages/
     │       ├── Login.jsx       ← หน้าเข้าสู่ระบบ
@@ -164,4 +230,4 @@ PJWEB/
 - ⭐ ผู้พักอาศัยให้คะแนนและรีวิวช่าง
 - 👤 แก้ไขโปรไฟล์ (ชื่อ, รูปภาพ, รหัสผ่าน, ชื่อผู้ใช้)
 - 🛡️ แอดมินสร้างบัญชี / แก้ไขข้อมูลผู้ใช้ / ดูรหัสผ่าน
-- 🌙 ธีมมืด Glassmorphism สวยงาม
+- 🌗 สลับธีมมืด/สว่าง (Dark/Light Mode) พร้อมจดจำค่าที่เลือกไว้
