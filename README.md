@@ -3,7 +3,7 @@
 ระบบจัดการแจ้งซ่อมสำหรับหอพัก พัฒนาด้วย React + Node.js + MySQL  
 รองรับ 3 บทบาท: **ผู้พักอาศัย**, **ช่างซ่อม**, และ **ผู้ดูแลระบบ (Admin)**
 
-🌐 **Live Demo**: [https://project-dormfix.up.railway.app]([https://project-dormfix.up.railway.app](https://project-webtechnolohy-dormfix.up.railway.app/))
+🌐 **Live Demo**: [https://project-dormfix.up.railway.app](https://project-webtechnolohy-dormfix.up.railway.app)
 
 ---
 
