@@ -9,7 +9,7 @@
     "build": "cd client && npm install && npm run build"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "cors": "^2.8.5",
