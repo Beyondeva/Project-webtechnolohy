@@ -78,9 +78,7 @@ export default function Register() {
             <div className="relative z-10 w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/30 mb-4">
-                        <Wrench className="text-white" size={28} />
-                    </div>
+                    <img src="/logo.png" alt="DormFix" className="w-16 h-16 rounded-2xl shadow-lg shadow-indigo-500/30 mb-4 mx-auto" />
                     <h1 className={`text-3xl font-bold ${t.titleGradient}`}>DormFix</h1>
                     <p className={`${t.textSecondary} mt-1`}>สมัครสมาชิกใหม่</p>
                 </div>

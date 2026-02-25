@@ -34,9 +34,7 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link to="/dashboard" className="flex items-center gap-3 group">
-                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-shadow">
-                            <Wrench size={18} className="text-white" />
-                        </div>
+                        <img src="/logo.png" alt="DormFix" className="w-9 h-9 rounded-xl shadow-lg" />
                         <span className={`text-lg font-bold ${t.logoText} hidden sm:block`}>
                             DormFix
                         </span>
