@@ -12,6 +12,7 @@ USE dorm_maintenance;
 -- -------------------------------------------
 -- Table: users
 -- -------------------------------------------
+DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS tickets;
 DROP TABLE IF EXISTS users;
 
@@ -21,7 +22,8 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   role ENUM('user', 'technician', 'admin') NOT NULL,
   name VARCHAR(100) NOT NULL,
-  avatar VARCHAR(500) DEFAULT NULL
+  avatar VARCHAR(500) DEFAULT NULL,
+  phone VARCHAR(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------
@@ -46,12 +48,25 @@ CREATE TABLE tickets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------
+-- Table: messages (Chat per ticket)
+-- -------------------------------------------
+CREATE TABLE messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  sender_id INT NOT NULL,
+  message TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------
 -- Seed: Demo Users
 -- -------------------------------------------
-INSERT INTO users (username, password, role, name) VALUES
-  ('user1', 'pass1', 'user', 'สมชาย ดีใจ'),
-  ('user2', 'pass2', 'user', 'สมหญิง สุขสันต์'),
-  ('user3', 'pass3', 'user', 'วิภา รักเรียน'),
-  ('tech1', 'pass1', 'technician', 'ช่างประยุทธ์ ซ่อมเก่ง'),
-  ('tech2', 'pass2', 'technician', 'ช่างสมศักดิ์ แก้ไขดี'),
-  ('admin', 'admin123', 'admin', 'ผู้ดูแลระบบ');
+INSERT INTO users (username, password, role, name, phone) VALUES
+  ('user1', 'pass1', 'user', 'สมชาย ดีใจ', '081-111-1111'),
+  ('user2', 'pass2', 'user', 'สมหญิง สุขสันต์', '082-222-2222'),
+  ('user3', 'pass3', 'user', 'วิภา รักเรียน', '083-333-3333'),
+  ('tech1', 'pass1', 'technician', 'ช่างประยุทธ์ ซ่อมเก่ง', '091-111-1111'),
+  ('tech2', 'pass2', 'technician', 'ช่างสมศักดิ์ แก้ไขดี', '092-222-2222'),
+  ('admin', 'admin123', 'admin', 'ผู้ดูแลระบบ', '099-999-9999');

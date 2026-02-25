@@ -18,6 +18,7 @@ import {
     X,
     Eye,
     EyeOff,
+    Phone,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -31,6 +32,7 @@ export default function ProfilePage() {
 
     const [username, setUsername] = useState(user.username);
     const [name, setName] = useState(user.name);
+    const [phone, setPhone] = useState(user.phone || '');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [avatarFile, setAvatarFile] = useState(null);
@@ -53,10 +55,11 @@ export default function ProfilePage() {
 
         const usernameChanged = !isAdmin && username !== user.username;
         const nameChanged = !isAdmin && name !== user.name;
+        const phoneChanged = phone !== (user.phone || '');
         const passwordChanged = !isAdmin && password.length > 0;
         const avatarChanged = avatarFile !== null;
 
-        if (!usernameChanged && !nameChanged && !passwordChanged && !avatarChanged) {
+        if (!usernameChanged && !nameChanged && !phoneChanged && !passwordChanged && !avatarChanged) {
             setError('ไม่มีข้อมูลที่ต้องอัปเดต');
             return;
         }
@@ -81,6 +84,9 @@ export default function ProfilePage() {
             }
             if (avatarFile) {
                 formData.append('avatar', avatarFile);
+            }
+            if (phoneChanged) {
+                formData.append('phone', phone);
             }
 
             const { data } = await api.put(`/users/${user.id}`, formData, {
@@ -217,6 +223,21 @@ export default function ProfilePage() {
                                     </button>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                            <label className={`block text-xs ${t.textMuted} mb-2 flex items-center gap-1.5`}>
+                                <Phone size={14} />
+                                เบอร์โทรศัพท์
+                            </label>
+                            <input
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="เช่น 081-234-5678"
+                                className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`}
+                            />
                         </div>
 
                         {/* Submit */}

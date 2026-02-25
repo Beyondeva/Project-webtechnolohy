@@ -50,13 +50,39 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' });
     }
     const [rows] = await pool.execute(
-      'SELECT id, username, role, name, avatar FROM users WHERE username = ? AND password = ?',
+      'SELECT id, username, role, name, avatar, phone FROM users WHERE username = ? AND password = ?',
       [username, password]
     );
     if (rows.length === 0) {
       return res.status(401).json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
     res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
+  }
+});
+
+// --- Register (Public) ---
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, password, name, phone } = req.body;
+    if (!username || !password || !name) {
+      return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+    }
+
+    // Check duplicate username
+    const [existing] = await pool.execute('SELECT id FROM users WHERE username = ?', [username]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว' });
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO users (username, password, role, name, phone) VALUES (?, ?, ?, ?, ?)',
+      [username, password, 'user', name, phone || null]
+    );
+
+    res.status(201).json({ id: result.insertId, username, role: 'user', name, phone: phone || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
@@ -102,8 +128,8 @@ app.get('/api/tickets/:id', async (req, res) => {
   try {
     const [rows] = await pool.execute(
       `SELECT t.*, 
-        u1.name as creator_name, 
-        u2.name as technician_name
+        u1.name as creator_name, u1.phone as creator_phone,
+        u2.name as technician_name, u2.phone as technician_phone
       FROM tickets t
       LEFT JOIN users u1 ON t.created_by = u1.id
       LEFT JOIN users u2 ON t.technician_id = u2.id
@@ -246,7 +272,7 @@ app.delete('/api/tickets/:id', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, username, password, role, name, avatar FROM users ORDER BY role, name'
+      'SELECT id, username, password, role, name, avatar, phone FROM users ORDER BY role, name'
     );
     res.json(rows);
   } catch (err) {
@@ -258,7 +284,7 @@ app.get('/api/users', async (req, res) => {
 // --- Create User (Admin) ---
 app.post('/api/users', async (req, res) => {
   try {
-    const { username, password, role, name } = req.body;
+    const { username, password, role, name, phone } = req.body;
     if (!username || !password || !role || !name) {
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
     }
@@ -273,11 +299,11 @@ app.post('/api/users', async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)',
-      [username, password, role, name]
+      'INSERT INTO users (username, password, role, name, phone) VALUES (?, ?, ?, ?, ?)',
+      [username, password, role, name, phone || null]
     );
 
-    res.status(201).json({ id: result.insertId, username, role, name });
+    res.status(201).json({ id: result.insertId, username, role, name, phone: phone || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
@@ -312,7 +338,7 @@ app.put('/api/users/:id', upload.single('avatar'), async (req, res) => {
     let updates = [];
     let params = [];
 
-    const { username, name, password } = req.body;
+    const { username, name, password, phone, role } = req.body;
     const avatar = req.file ? `/uploads/${req.file.filename}` : undefined;
 
     // Check duplicate username if changing
@@ -338,12 +364,15 @@ app.put('/api/users/:id', upload.single('avatar'), async (req, res) => {
       if (name) { updates.push('name = ?'); params.push(name); }
       if (password) { updates.push('password = ?'); params.push(password); }
       if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+      if (phone !== undefined) { updates.push('phone = ?'); params.push(phone || null); }
+      if (role && ['user', 'technician'].includes(role) && role !== targetUser.role) { updates.push('role = ?'); params.push(role); }
     } else {
       // User/Tech editing self: username, name, password, avatar
       if (username && username !== targetUser.username) { updates.push('username = ?'); params.push(username); }
       if (name) { updates.push('name = ?'); params.push(name); }
       if (password) { updates.push('password = ?'); params.push(password); }
       if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+      if (phone !== undefined) { updates.push('phone = ?'); params.push(phone || null); }
     }
 
     if (updates.length === 0) {
@@ -354,7 +383,7 @@ app.put('/api/users/:id', upload.single('avatar'), async (req, res) => {
     await pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const [updated] = await pool.execute(
-      'SELECT id, username, role, name, avatar FROM users WHERE id = ?',
+      'SELECT id, username, role, name, avatar, phone FROM users WHERE id = ?',
       [targetId]
     );
     res.json(updated[0]);
@@ -394,6 +423,71 @@ app.get('/api/technician-ratings', async (req, res) => {
       ORDER BY avg_rating DESC
     `);
     res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
+  }
+});
+
+// --- Get Reviews for a Technician ---
+app.get('/api/technician-reviews/:techId', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT t.id, t.title, t.rating, t.review, t.room_number, t.created_at,
+              u.name as reviewer_name
+       FROM tickets t
+       JOIN users u ON t.created_by = u.id
+       WHERE t.technician_id = ? AND t.rating IS NOT NULL
+       ORDER BY t.created_at DESC`,
+      [req.params.techId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
+  }
+});
+
+// --- Get Messages for a Ticket ---
+app.get('/api/tickets/:id/messages', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT m.*, u.name as sender_name, u.avatar as sender_avatar, u.role as sender_role
+       FROM messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.ticket_id = ?
+       ORDER BY m.created_at ASC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });
+  }
+});
+
+// --- Send Message in a Ticket ---
+app.post('/api/tickets/:id/messages', async (req, res) => {
+  try {
+    const { sender_id, message } = req.body;
+    if (!sender_id || !message || !message.trim()) {
+      return res.status(400).json({ error: 'กรุณาพิมพ์ข้อความ' });
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO messages (ticket_id, sender_id, message) VALUES (?, ?, ?)',
+      [req.params.id, sender_id, message.trim()]
+    );
+
+    const [rows] = await pool.execute(
+      `SELECT m.*, u.name as sender_name, u.avatar as sender_avatar, u.role as sender_role
+       FROM messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.id = ?`,
+      [result.insertId]
+    );
+
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์' });

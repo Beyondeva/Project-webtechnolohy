@@ -19,6 +19,7 @@ import {
     Pencil,
     Camera,
     Save,
+    Phone,
 } from 'lucide-react';
 
 export default function UsersPage() {
@@ -38,12 +39,13 @@ export default function UsersPage() {
         name: '',
         username: '',
         password: '',
+        phone: '',
         role: 'user',
     });
 
     // Edit user modal
     const [editUser, setEditUser] = useState(null);
-    const [editForm, setEditForm] = useState({ name: '', password: '' });
+    const [editForm, setEditForm] = useState({ name: '', password: '', phone: '', role: '' });
     const [editAvatarFile, setEditAvatarFile] = useState(null);
     const [editAvatarPreview, setEditAvatarPreview] = useState(null);
     const [editLoading, setEditLoading] = useState(false);
@@ -92,7 +94,7 @@ export default function UsersPage() {
             const { data } = await api.post('/users', form);
             setUsers((prev) => [...prev, data]);
             setFormSuccess(`สร้างบัญชี "${data.name}" เรียบร้อยแล้ว`);
-            setForm({ name: '', username: '', password: '', role: 'user' });
+            setForm({ name: '', username: '', password: '', phone: '', role: 'user' });
             setTimeout(() => setFormSuccess(''), 4000);
         } catch (err) {
             setFormError(err.response?.data?.error || 'เกิดข้อผิดพลาด');
@@ -103,7 +105,7 @@ export default function UsersPage() {
 
     const openEditModal = (u) => {
         setEditUser(u);
-        setEditForm({ username: u.username, name: u.name, password: '', currentPassword: u.password });
+        setEditForm({ username: u.username, name: u.name, password: '', currentPassword: u.password, phone: u.phone || '', role: u.role });
         setEditAvatarFile(null);
         setEditAvatarPreview(null);
         setEditError('');
@@ -123,10 +125,12 @@ export default function UsersPage() {
         e.preventDefault();
         const usernameChanged = editForm.username !== editUser.username;
         const nameChanged = editForm.name !== editUser.name;
+        const phoneChanged = editForm.phone !== (editUser.phone || '');
+        const roleChanged = editForm.role !== editUser.role;
         const passwordChanged = editForm.password.length > 0;
         const avatarChanged = editAvatarFile !== null;
 
-        if (!usernameChanged && !nameChanged && !passwordChanged && !avatarChanged) {
+        if (!usernameChanged && !nameChanged && !phoneChanged && !roleChanged && !passwordChanged && !avatarChanged) {
             setEditError('ไม่มีข้อมูลที่ต้องอัปเดต');
             return;
         }
@@ -142,6 +146,8 @@ export default function UsersPage() {
 
             if (usernameChanged) formData.append('username', editForm.username);
             if (nameChanged) formData.append('name', editForm.name);
+            if (phoneChanged) formData.append('phone', editForm.phone);
+            if (roleChanged) formData.append('role', editForm.role);
             if (passwordChanged) formData.append('password', editForm.password);
             if (avatarChanged) formData.append('avatar', editAvatarFile);
 
@@ -151,7 +157,7 @@ export default function UsersPage() {
 
             setUsers((prev) => prev.map((u) => (u.id === data.id ? data : u)));
             setEditUser(data);
-            setEditForm({ username: data.username, name: data.name, password: '' });
+            setEditForm({ username: data.username, name: data.name, password: '', phone: data.phone || '', role: data.role });
             setEditAvatarFile(null);
             setEditAvatarPreview(null);
             setEditSuccess('บันทึกข้อมูลเรียบร้อยแล้ว');
@@ -277,6 +283,12 @@ export default function UsersPage() {
                                 </div>
                             </div>
 
+                            <div>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>เบอร์โทรศัพท์</label>
+                                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="เช่น 081-234-5678"
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all`} />
+                            </div>
+
                             <button type="submit" disabled={formLoading}
                                 className="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {formLoading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
@@ -311,6 +323,7 @@ export default function UsersPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className={`${t.textPrimary} font-medium truncate`}>{u.name}</p>
                                             <p className={`text-xs ${t.textMuted}`}>@{u.username}</p>
+                                            {u.phone && <p className={`text-xs ${t.textMuted} flex items-center gap-1 mt-0.5`}><Phone size={10} />{u.phone}</p>}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border ${cfg.color}`}>
@@ -384,7 +397,26 @@ export default function UsersPage() {
                                 </div>
                             </div>
 
-                            <p className={`text-center text-sm ${t.textSecondary}`}>{roleConfig[editUser.role]?.label}</p>
+                            {/* Role Selector */}
+                            <div>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>ประเภทผู้ใช้</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button type="button" onClick={() => setEditForm({ ...editForm, role: 'user' })}
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${editForm.role === 'user'
+                                            ? (isDark ? 'bg-blue-500/15 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10' : 'bg-blue-100 border-blue-400 text-blue-700 shadow-sm')
+                                            : `${t.btnSecondary}`
+                                            }`}>
+                                        <User size={16} /> ผู้พักอาศัย
+                                    </button>
+                                    <button type="button" onClick={() => setEditForm({ ...editForm, role: 'technician' })}
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${editForm.role === 'technician'
+                                            ? (isDark ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-lg shadow-amber-500/10' : 'bg-amber-100 border-amber-400 text-amber-700 shadow-sm')
+                                            : `${t.btnSecondary}`
+                                            }`}>
+                                        <Wrench size={16} /> ช่างซ่อม
+                                    </button>
+                                </div>
+                            </div>
 
                             {/* Username */}
                             <div>
@@ -409,12 +441,20 @@ export default function UsersPage() {
                                 <div className="relative">
                                     <input type={showEditPassword ? 'text' : 'password'} value={editForm.password}
                                         onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                                        placeholder="เว้นว่างหากไม่ต้องการเปลี่ยน"
+                                        placeholder="เปลี่ยนรหัสผ่าน/เว้นว่างหากไม่ต้องการเปลี่ยน"
                                         className={`w-full ${t.input} rounded-xl py-3 px-4 pr-12 ${t.inputFocus} transition-all`} />
                                     <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 ${t.textMuted} hover:${t.textLabel} transition-colors`}>
                                         {showEditPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Phone */}
+                            <div>
+                                <label className={`block text-xs ${t.textMuted} mb-2`}>เบอร์โทรศัพท์</label>
+                                <input type="tel" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                    placeholder="เช่น 081-234-5678"
+                                    className={`w-full ${t.input} rounded-xl py-3 px-4 ${t.inputFocus} transition-all`} />
                             </div>
 
                             {/* Submit */}

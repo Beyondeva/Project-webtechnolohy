@@ -6,6 +6,7 @@ import { useThemeClasses } from '../hooks/useThemeClasses';
 import api, { getImageUrl } from '../api';
 import Navbar from '../components/Navbar';
 import StarRating from '../components/StarRating';
+import TicketChat from '../components/TicketChat';
 import {
     ArrowLeft,
     Loader2,
@@ -22,6 +23,7 @@ import {
     AlertCircle,
     MessageSquare,
     XCircle,
+    Phone,
 } from 'lucide-react';
 
 const statusMeta = {
@@ -342,6 +344,12 @@ export default function TicketDetail() {
                                 <User size={14} className="text-indigo-400" />
                                 {ticket.creator_name}
                             </span>
+                            {ticket.creator_phone && (
+                                <a href={`tel:${ticket.creator_phone}`} className="flex items-center gap-1.5 hover:text-indigo-400 transition-colors">
+                                    <Phone size={14} className="text-emerald-400" />
+                                    {ticket.creator_phone}
+                                </a>
+                            )}
                             <span className="flex items-center gap-1.5">
                                 <Calendar size={14} className="text-indigo-400" />
                                 {new Date(ticket.created_at).toLocaleString('th-TH')}
@@ -351,6 +359,12 @@ export default function TicketDetail() {
                                     <Wrench size={14} className="text-amber-400" />
                                     ช่าง: {ticket.technician_name}
                                 </span>
+                            )}
+                            {ticket.technician_phone && (
+                                <a href={`tel:${ticket.technician_phone}`} className="flex items-center gap-1.5 hover:text-amber-400 transition-colors">
+                                    <Phone size={14} className="text-emerald-400" />
+                                    {ticket.technician_phone}
+                                </a>
                             )}
                         </div>
                     </div>
@@ -566,6 +580,11 @@ export default function TicketDetail() {
                                 </button>
                             </div>
                         </div>
+                    )}
+
+                    {/* Chat Section */}
+                    {ticket.technician_id && (
+                        <TicketChat ticketId={ticket.id} />
                     )}
                 </div>
             </div>

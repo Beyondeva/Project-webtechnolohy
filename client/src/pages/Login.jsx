@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useThemeClasses } from '../hooks/useThemeClasses';
@@ -129,6 +129,15 @@ export default function Login() {
                             <p><span className="text-amber-400">ช่างซ่อม:</span> tech1 / pass1</p>
                             <p><span className="text-rose-400">ผู้ดูแล:</span> admin / admin123</p>
                         </div>
+                    </div>
+
+                    <div className="mt-6 text-center">
+                        <p className={`text-sm ${t.textSecondary}`}>
+                            ยังไม่มีบัญชี?{' '}
+                            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline">
+                                สมัครสมาชิก
+                            </Link>
+                        </p>
                     </div>
                 </div>
             </div>
