@@ -6,7 +6,7 @@ const fs = require('fs');
 const mysql = require('mysql2/promise');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // --------------- Middleware ---------------
 app.use(cors());
@@ -30,15 +30,18 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // --------------- MySQL Connection Pool ---------------
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '12345678a',
-  database: 'dorm_maintenance',
-  waitForConnections: true,
-  connectionLimit: 10,
-  charset: 'utf8mb4',
-});
+const pool = process.env.MYSQL_URL
+  ? mysql.createPool(process.env.MYSQL_URL)
+  : mysql.createPool({
+    host: process.env.MYSQLHOST || 'localhost',
+    port: process.env.MYSQLPORT || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || '12345678a',
+    database: process.env.MYSQLDATABASE || 'dorm_maintenance',
+    waitForConnections: true,
+    connectionLimit: 10,
+    charset: 'utf8mb4',
+  });
 
 // --------------- API Routes ---------------
 
@@ -494,7 +497,16 @@ app.post('/api/tickets/:id/messages', async (req, res) => {
   }
 });
 
+// --------------- Serve Frontend (production) ---------------
+const clientDist = path.join(__dirname, 'client', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
 // --------------- Start Server ---------------
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
