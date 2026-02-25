@@ -127,7 +127,6 @@ export default function Login() {
                         <div className={`space-y-1.5 text-xs ${t.demoText}`}>
                             <p><span className="text-indigo-400">ผู้พักอาศัย:</span> user1 / pass1</p>
                             <p><span className="text-amber-400">ช่างซ่อม:</span> tech1 / pass1</p>
-                            <p><span className="text-rose-400">ผู้ดูแล:</span> admin / admin123</p>
                         </div>
                     </div>
 
