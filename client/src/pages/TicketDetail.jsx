@@ -58,6 +58,8 @@ export default function TicketDetail() {
     const [showCancelPanel, setShowCancelPanel] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
 
+    const [lightboxUrl, setLightboxUrl] = useState(null);
+
     useEffect(() => {
         fetchTicket();
         if (user.role === 'admin') {
@@ -383,8 +385,8 @@ export default function TicketDetail() {
                         <div className="grid sm:grid-cols-2 gap-4">
                             <div>
                                 <p className={`text-xs ${t.textMuted} mb-2 font-medium`}>ก่อนซ่อม</p>
-                                {ticket.image_before ? (
-                                    <div className={`rounded-xl overflow-hidden border ${t.border}`}>
+                                    {ticket.image_before ? (
+                                    <div className={`rounded-xl overflow-hidden border ${t.border} cursor-pointer`} onClick={() => setLightboxUrl(getImageUrl(ticket.image_before))}>
                                         <img src={getImageUrl(ticket.image_before)} alt="ก่อนซ่อม" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300" />
                                     </div>
                                 ) : (
@@ -393,8 +395,8 @@ export default function TicketDetail() {
                             </div>
                             <div>
                                 <p className={`text-xs ${t.textMuted} mb-2 font-medium`}>หลังซ่อม</p>
-                                {ticket.image_after ? (
-                                    <div className={`rounded-xl overflow-hidden border ${t.border}`}>
+                                    {ticket.image_after ? (
+                                    <div className={`rounded-xl overflow-hidden border ${t.border} cursor-pointer`} onClick={() => setLightboxUrl(getImageUrl(ticket.image_after))}>
                                         <img src={getImageUrl(ticket.image_after)} alt="หลังซ่อม" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-300" />
                                     </div>
                                 ) : (
@@ -588,6 +590,27 @@ export default function TicketDetail() {
                     )}
                 </div>
             </div>
+
+            {/* Lightbox Modal */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+                    onClick={() => setLightboxUrl(null)}
+                >
+                    <button
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+                    >
+                        <X size={24} />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="ดูภาพเต็ม"
+                        className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl animate-[zoomIn_0.2s_ease-out]"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 }
